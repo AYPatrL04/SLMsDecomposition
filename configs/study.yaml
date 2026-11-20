@@ -1,0 +1,88 @@
+model:
+  checkpoint: Qwen/Qwen3.5-4B
+  revision: 851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a
+  device: auto
+  dtype: auto
+  attn_implementation: sdpa
+  local_files_only: false
+
+data:
+  train: ../data/train.json.gz
+  inputs: ../data/inputs.json.gz
+  references: ../data/references.json.gz
+
+training:
+  seed: 17
+  epochs: 1
+  parents: 512
+  rank: 16
+  alpha: 32
+  targets: [q_proj, k_proj, v_proj, o_proj]
+  learning_rate: 0.00006
+  final_lr_fraction: 0.25
+  warmup_updates: 12
+  weight_decay: 0.01
+  accumulation: 8
+  max_grad_norm: 1.0
+  max_sequence_tokens: 2048
+  gradient_checkpointing: true
+  planner_every_parents: 4
+
+evaluation:
+  rows: {panel: 1024}
+  batch_size: 8
+  caps:
+    frozen_direct: 1024
+    direct: 1024
+    review: 1024
+    plan: 96
+    left_first: 288
+    right_first: 288
+    left_last: 288
+    right_last: 288
+    full: 800
+    compact: 800
+    flat_left: 576
+    flat_right: 576
+    flat_full: 800
+    full_no_check: 800
+    review_no_check: 1024
+  arms:
+    frozen_direct: [frozen_direct]
+    direct: [direct]
+    review: [direct, review]
+    full: [plan, left_first, right_first, left_last, right_last, full]
+    compact: [plan, left_first, right_first, left_last, right_last, compact]
+    flat_full: [plan, flat_left, flat_right, flat_full]
+    full_no_check: [plan, left_first, right_first, left_last, right_last, full_no_check]
+    review_no_check: [direct, review_no_check]
+  bootstrap_seed: 27987
+  bootstrap_draws: 20000
+  superiority_alpha: 0.01
+
+latency:
+  assignments:
+    - {"id": "mg-scale-121acc75443824226a00", "whole_first": true, "full_first": false}
+    - {"id": "mg-scale-1f06673302d2836c1970", "whole_first": true, "full_first": true}
+    - {"id": "mg-scale-376f34854227e249afca", "whole_first": false, "full_first": true}
+    - {"id": "mg-scale-b68dd1b2279a80464e6e", "whole_first": true, "full_first": false}
+    - {"id": "mg-scale-8565e50a47db007d13c0", "whole_first": true, "full_first": true}
+    - {"id": "mg-scale-ee4e19fb4ff724f7d813", "whole_first": false, "full_first": true}
+    - {"id": "mg-scale-909c8a086444bea4ff99", "whole_first": false, "full_first": false}
+    - {"id": "mg-scale-a3020d78b7cdd4d5a52f", "whole_first": false, "full_first": false}
+    - {"id": "mg-scale-b080fb7607858b08ddc6", "whole_first": false, "full_first": true}
+    - {"id": "mg-scale-8aff6bb6926c6db77715", "whole_first": true, "full_first": true}
+    - {"id": "mg-scale-8756a1d2170aa0fd9b53", "whole_first": false, "full_first": false}
+    - {"id": "mg-scale-40a14b03e4bb65c85d10", "whole_first": true, "full_first": true}
+    - {"id": "mg-scale-5e493ec61b3c9a3ff7b7", "whole_first": false, "full_first": true}
+    - {"id": "mg-scale-15baebf7d026130f4c06", "whole_first": false, "full_first": false}
+    - {"id": "mg-scale-888ef3e24e046ed3d781", "whole_first": true, "full_first": false}
+    - {"id": "mg-scale-22c6f3fbf9a4661a50fc", "whole_first": true, "full_first": false}
+    - {"id": "mg-scale-e4120cbc1492f8727c94", "whole_first": false, "full_first": false}
+    - {"id": "mg-scale-7b3255fcb3b0bc3d770f", "whole_first": false, "full_first": true}
+    - {"id": "mg-scale-8df31a92cc04abd64990", "whole_first": true, "full_first": true}
+    - {"id": "mg-scale-defb2a580de3fb71d580", "whole_first": true, "full_first": true}
+    - {"id": "mg-scale-574ad1bcfc73ef6d5f93", "whole_first": true, "full_first": false}
+    - {"id": "mg-scale-93cb4f08eb70832e157d", "whole_first": true, "full_first": false}
+    - {"id": "mg-scale-aa8a5dfbb13a29634748", "whole_first": false, "full_first": false}
+    - {"id": "mg-scale-f87e87d21258dcaa6d90", "whole_first": false, "full_first": true}
