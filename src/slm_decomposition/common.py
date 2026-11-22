@@ -16,6 +16,18 @@ def load_config(path):
         key: str((source.parent / Path(value).expanduser()).resolve())
         for key, value in cfg["data"].items()
     }
+    evaluation = cfg.get("evaluation", {})
+    verified = evaluation.get("verified_compact", False)
+    if not isinstance(verified, bool):
+        raise ValueError("verified_compact must be a boolean")
+    if verified:
+        original = ("left_last", "right_last", "compact")
+        caps = evaluation["caps"]
+        caps.update({f"{stage}_verified": caps[stage] for stage in original})
+        arms = evaluation["arms"]
+        arms["compact_verified"] = [
+            f"{stage}_verified" if stage in original else stage for stage in arms["compact"]
+        ]
     return cfg
 
 

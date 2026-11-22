@@ -188,3 +188,11 @@ def inspect_work(case, text, owner=None, unit=None):
         "invalid_steps": len(failing) + len(bad_ids),
         "cited_ids": sorted({i for i, _, _ in citations}),
     }
+
+
+def verified_carry_value(prefix_case, working, owner, unit):
+    """Return a replacement for a typed midpoint when its own citations establish one."""
+    check = inspect_work(prefix_case, working, owner, unit)
+    reported = check["reported_value"]
+    supported = check["supported_value"]
+    return supported if reported is not None and supported is not None and supported != reported else None

@@ -68,6 +68,33 @@ class RoutingTest(unittest.TestCase):
         self.previous["left_first"]["text"] = "Value: Evan = 73 clocks"
         self.assertIsNone(make_prompt("left_last", self.case, self.previous))
 
+    def test_verified_carry_uses_prefix_citations_and_preserves_original(self):
+        self.previous["left_first"]["text"] = self.previous["left_first"]["text"].replace(
+            "Value: Evan = 10", "Value: Evan = 73"
+        )
+        original = make_prompt("left_last", self.case, self.previous)
+        verified = make_prompt("left_last_verified", self.case, self.previous)
+        self.assertIn("S1: Evan has 73 rugs.", original)
+        self.assertEqual(verified, original.replace("S1: Evan has 73 rugs.", "S1: Evan has 10 rugs."))
+        self.assertIn("Value: Evan = 73 rugs", self.previous["left_first"]["text"])
+
+        self.previous["left_first"]["text"] = self.previous["left_first"]["text"].replace(
+            "S5:", "S6:"
+        )
+        self.assertEqual(
+            make_prompt("left_last_verified", self.case, self.previous),
+            make_prompt("left_last", self.case, self.previous),
+        )
+        self.previous["left_first"]["text"] = "Value: Evan = 73 clocks"
+        self.assertIsNone(make_prompt("left_last_verified", self.case, self.previous))
+
+    def test_verified_compact_reads_the_separate_suffix(self):
+        self.previous["left_last_verified"] = {"text": "Value: Iris = 21 rugs"}
+        self.previous["right_last_verified"] = self.previous["right_last"]
+        self.assertIn("Value: Iris = 21 rugs", make_prompt("compact_verified", self.case, self.previous))
+        self.assertIn("Value: Iris = 10 rugs", make_prompt("compact", self.case, self.previous))
+        self.assertIn("Value: Iris = 10 rugs", make_prompt("full", self.case, self.previous))
+
     def test_unchecked_policies_preserve_model_text(self):
         for policy in ("review", "full"):
             native = make_prompt(policy, self.case, self.previous)

@@ -36,6 +36,8 @@ python -m slm_decomposition.latency --config configs/study.yaml --adapter runs/t
 
 Inference checkpoints completed batches and seals the generated predictions before scoring. Repeat its command to resume. The scorer writes paired accuracy, token counts, batch generation time, endpoint diagnostics and feedback ablations to `runs/panel/scores.json`. The latency replay uses the 24 question IDs and execution-order flags in the study configuration and writes `runs/latency/summary.json`. All model weights, local run records and generated outputs stay outside Git.
 
+Set `evaluation.verified_compact` to `true` in the study configuration to add the verified-carry comparison. Before solving the second chunk, the checker replaces a generated midpoint if the first chunk's own citations establish a different value. Identical prompts reuse their original generations. Use a fresh run directory and the same configuration for inference and scoring.
+
 For a short installation check, add `--max-updates 1` to training in a new output directory. Pass its `smoke-adapter.pt` to inference with `--limit 8` and score that directory. Use a fully trained adapter for accuracy comparisons.
 
 Model size, snapshot, device, training schedule, batch size and token caps are in [the study configuration](configs/study.yaml). For a 2B comparison, change `model.checkpoint` to `Qwen/Qwen3.5-2B` and `model.revision` to `15852e8c16360a2fea060d615a32b45270f8a8fc`. Train a new adapter and use separate output directories. The results below use 4B. To run inference on your own compatible problems, supply `--inputs questions.json` with an array of objects containing only `id`, `document` and `question`. The included scoring key covers the [fixed study panel](data/README.md).

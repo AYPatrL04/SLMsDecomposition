@@ -29,6 +29,7 @@ training:
   planner_every_parents: 4
 
 evaluation:
+  verified_compact: false
   rows: {panel: 1024}
   batch_size: 8
   caps:

@@ -9,7 +9,7 @@ import re
 from collections import defaultdict
 
 from . import prompts
-from .source_check import parse_fact, query
+from .source_check import parse_fact, query, verified_carry_value
 
 ROLES = ("left", "right")
 CHUNK_UPDATES = 4
@@ -216,7 +216,7 @@ def _ordered_prompt(stage, case, previous, feedback=True):
     return _insert(prompts.make_prompt(stage, selected, translated, feedback=feedback), mapping)
 
 
-def _chunk_prompt(case, previous, side, phase):
+def _chunk_prompt(case, previous, side, phase, *, verify=False):
     role = ROLES.index(side)
     slot = prompts.plan_slots(previous["plan"]["text"])[role]
     part = component(case, slot)
@@ -241,8 +241,16 @@ def _chunk_prompt(case, previous, side, phase):
             or carry[2].casefold() != part["unit"].casefold()
         ):
             return None
+        amount = carry[1]
+        if verify:
+            prefix = "\n".join(lines[i - 1] for i in ids[: CHUNK_UPDATES + 1])
+            replacement = verified_carry_value(
+                {**case, "document": prefix}, first, part["bridge"], part["unit"]
+            )
+            if replacement is not None:
+                amount = replacement
         tail = ids[CHUNK_UPDATES + 1 :]
-        subset = [f"{part['bridge']} has {carry[1]} {part['unit']}."]
+        subset = [f"{part['bridge']} has {amount} {part['unit']}."]
         subset.extend(lines[i - 1] for i in tail)
         cited = sorted({int(k) for k in CITED_PREFIX.findall(first) if int(k) <= CHUNK_UPDATES + 1})
         provenance = ", ".join(f"R{ids[k - 1]}" for k in cited) or "no recognized source ID"
@@ -257,11 +265,12 @@ def _chunk_prompt(case, previous, side, phase):
     return _insert(prompts.make_prompt("child1", child, {"plan": {"text": plan}}), mapping)
 
 
-def combined(case, previous, side):
+def combined(case, previous, side, *, verified=False):
     """Join split generations in component-local IDs; a carry is not new evidence."""
     role = ROLES.index(side)
     slot = prompts.plan_slots(previous["plan"]["text"])[role]
-    last = previous[f"{side}_last"]["text"]
+    suffix_stage = f"{side}_last_verified" if verified else f"{side}_last"
+    last = previous[suffix_stage]["text"]
     if not component(case, slot):
         return last
     prefix = re.compile(r"^\s*\[?S([0-9]+)\]?\s*:", re.IGNORECASE | re.MULTILINE)
@@ -292,20 +301,23 @@ def make_prompt(stage, case, previous=None):
         stage = "direct"
     feedback = not stage.endswith("_no_check")
     stage = stage.removesuffix("_no_check")
+    verified = stage in ("left_last_verified", "right_last_verified", "compact_verified")
+    if verified:
+        stage = stage.removesuffix("_verified")
     if stage in ("plan", "direct", "review"):
         text = _ordered_prompt(stage, case, previous, feedback)
     elif stage in ("flat_left", "flat_right"):
         role = ROLES.index(stage.removeprefix("flat_"))
         text = _ordered_prompt(f"child{role + 1}", case, previous)
     elif stage in ("left_first", "right_first", "left_last", "right_last"):
-        return _chunk_prompt(case, previous, *stage.split("_"))
+        return _chunk_prompt(case, previous, *stage.split("_"), verify=verified)
     elif stage in ("full", "flat_full", "compact"):
         children = {"plan": previous["plan"]}
         for j, side in enumerate(ROLES, 1):
             working = (
                 previous[f"flat_{side}"]["text"]
                 if stage == "flat_full"
-                else combined(case, previous, side)
+                else combined(case, previous, side, verified=verified)
             )
             children[f"child{j}"] = {"text": working}
         text = _ordered_prompt("full" if stage == "flat_full" else stage, case, children, feedback)

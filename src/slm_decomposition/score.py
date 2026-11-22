@@ -81,6 +81,8 @@ def paired_statistics(flags, directions, cfg):
     comparisons = [("full", "review"), ("full", "compact"), ("full", "flat_full"),
                    ("full", "direct"), ("direct", "frozen_direct"), ("review", "direct"),
                    ("cert_full", "cert_review"), ("cert_full", "cert_compact"), ("cert_full", "full")]
+    if "compact_verified" in flags:
+        comparisons.append(("compact_verified", "compact"))
     draws = np.random.default_rng(seed).integers(0, n, size=(count, n))
     pairs = {f"{a}_vs_{b}": contrast(flags[a], flags[b], draws) for a, b in comparisons}
     del draws
@@ -131,7 +133,7 @@ def summarize(cases, rows, keys, config):
             if (obs["id"] != case["id"] or obs["stage"] != stage or obs["cap"] != cap
                     or not 0 <= obs["output_tokens"] <= cap):
                 raise ValueError(f"Generation metadata mismatch for {case['id']} / {stage}")
-            if obs["batch_id"] is not None:
+            if obs["batch_id"] is not None and "reused_from" not in obs:
                 batches.add(obs["batch_id"])
                 physical_seconds += obs["amortized_seconds"]
         native = {arm: answer(row[arm]["text"]) for arm in arms}

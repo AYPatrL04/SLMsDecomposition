@@ -151,7 +151,15 @@ def run(config_path, adapter, directory, inputs=None, limit=None):
                 if prompt is None:
                     previous[case_id][stage] = missing(case_id, stage, cap)
                     continue
-                requests.append({"id": case_id, "digest": digest(prompt),
+                prompt_hash = digest(prompt)
+                if stage.endswith("_verified"):
+                    original = previous[case_id].get(stage.removesuffix("_verified"))
+                    if original and (original["prompt_hash"], original["cap"]) == (prompt_hash, cap):
+                        previous[case_id][stage] = {
+                            **original, "stage": stage, "reused_from": original["stage"]
+                        }
+                        continue
+                requests.append({"id": case_id, "digest": prompt_hash,
                                  "tokens": encode_chat(tokenizer, prompt)})
             requests.sort(key=lambda r: (len(r["tokens"]), r["id"]))
             for start in range(0, len(requests), batch_size):
