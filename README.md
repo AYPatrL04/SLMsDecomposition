@@ -34,7 +34,7 @@ python -m slm_decomposition.score --config configs/study.yaml --run runs/panel
 python -m slm_decomposition.latency --config configs/study.yaml --adapter runs/train/adapter.pt --primary runs/panel --output runs/latency
 ```
 
-Inference checkpoints completed batches and seals the generated predictions before scoring. Repeat its command to resume. The scorer writes paired accuracy, token counts, batch generation time, endpoint diagnostics and feedback ablations to `runs/panel/scores.json`. The latency replay uses the 24 question IDs and execution-order flags in the study configuration and writes `runs/latency/summary.json`. All model weights, local run records and generated outputs stay outside Git.
+Inference checkpoints completed batches and seals the generated predictions before scoring. Repeat its command to resume. The scorer writes paired accuracy, token counts, batch generation time, endpoint diagnostics and feedback ablations to `runs/panel/scores.json`. The latency replay uses the 24 question IDs and execution-order flags in the study configuration and writes `runs/latency/summary.json`. Model weights, raw generations, and local run records stay outside Git.
 
 Set `evaluation.verified_compact` to `true` in the study configuration to add the verified-carry comparison. Before solving the second chunk, the checker replaces a generated midpoint if the first chunk's own citations establish a different value. Identical prompts reuse their original generations. Use a fresh run directory and the same configuration for inference and scoring.
 
@@ -45,6 +45,8 @@ Model size, snapshot, device, training schedule, batch size and token caps are i
 ## Reference results
 
 The table reports the archived final adapter (SHA-256 `53a55341feba3fa580a1142ddf95db716c136e223a9b119784c784ed8c7de457`). A fresh run reproduced the training examples, token totals and 336 optimizer updates. Its learned weights differed numerically. To replay an existing adapter, skip training and pass that checkpoint to inference and latency.
+
+The [aggregate results](results/mathgap.json) retain the primary contrasts, endpoint readout, 24-question latency results, and a separate Compact-without-feedback replay. The [learned-route pilot](results/learned-routing-pilot.md) is an archived feasibility summary. The runnable package covers the fixed MathGAP workflow.
 
 Each row charges the complete policy, including shared upstream calls. Batch seconds measure synchronized model generation at batch size eight. They exclude tokenization, source checks and initialization. The warm latency column includes prompt preparation, source checking, generation and decoding on the fixed 24-question subset. Timing is hardware dependent.
 
